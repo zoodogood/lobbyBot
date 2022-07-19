@@ -16,6 +16,7 @@ class Command extends BaseCommand {
     const id            = interaction.options.get("lobby_id").value;
     const playersCount  = interaction.options.get("players_count")?.value || 6;
 
+
     const {user, guild} = interaction;
 
     const lobby = LobbyManager.createLobby(id, {playersCount, authorId: user, guildId: guild});
