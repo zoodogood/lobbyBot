@@ -239,16 +239,35 @@ class LobbyInfo {
     this.i18n  = i18n;
 
     this.#setHandlers();
+    this.#setDestroyTimeout();
+  }
+
+  #setDestroyTimeout(){
+    const TIMEOUT_MS = 900_000;
+    setTimeout(() => this.#removeHandlers(), TIMEOUT_MS);
   }
 
   #setHandlers(){
-    this.handlers = true;
-    this.lobby.on("enter", this.#enterHandler.bind(this));
-    this.lobby.on("leave", this.#leaveHandler.bind(this));
+    this.#handle = true;
 
-    this.lobby.on("delete", this.#deleteHandler.bind(this));
+    this.handlers = {
+      "enter": this.#enterHandler.bind(this),
+      "leave": this.#leaveHandler.bind(this),
+      "delete": this.#deleteHandler.bind(this),
 
-    this.lobby.on("updateDescription", this.updateMessage.bind(this))
+      "updateDescription": this.updateMessage.bind(this)
+    }
+
+    Object.entries(this.handlers)
+      .forEach(([eventName, func]) => this.lobby.on(eventName, func));
+  }
+
+  #removeHandlers(){
+    this.handle = false;
+    Object.entries(this.handlers)
+      .forEach(([eventName, func]) => this.lobby.removeListener(eventName, func));
+
+    this.updateMessage();
   }
 
   async #deleteHandler(){
@@ -292,7 +311,7 @@ class LobbyInfo {
       return this._toMessageIfDeleted();
 
     const cells = `${ lobby.players.length } / ${ lobby.players.cells }`;
-    const footerText = `${ this.handlers ? i18n("dataBeUpgrade") : i18n("dataNotBeUpgrade") }. ${ i18n("createdAt") }`;
+    const footerText = `${ this.#handle ? i18n("dataBeUpgrade") : i18n("dataNotBeUpgrade") }. ${ i18n("createdAt") }`;
 
     const description = lobby.description ?? i18n("defaultLobbyDescription");
     const fields = [
