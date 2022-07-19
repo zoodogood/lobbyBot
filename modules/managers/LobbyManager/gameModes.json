@@ -1,0 +1,12 @@
+[
+  {
+    "button": {
+      "label": "Два капитана",
+      "value": "twoCapitans",
+      "description": "Случайным образом выбираются двое. Собирают команду"
+    },
+    "onStart": function (game, start){
+
+    }
+  }
+]

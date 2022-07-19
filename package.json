@@ -1,0 +1,31 @@
+{
+  "name": "economicbot",
+  "type": "module",
+  "version": "0.0.1",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "refresh": "node refreshCommands.js"
+  },
+  "author": "zoodogood",
+  "license": "ISC",
+  "dependencies": {
+    "@bot/discord-util": "file:bot/modules/DiscordUtil",
+    "@database/database": "file:modules/database/Database",
+    "@database/query-builder": "file:modules/database/QueryBuilder",
+    "@discordjs/rest": "^0.3.0",
+    "@global/base-builder": "file:modules/BaseBuilder",
+    "@global/locales": "file:modules/locales",
+    "@global/methods-executer": "file:modules/MethodsExecuter",
+    "@global/util": "file:modules/Util",
+    "@managers/GuildManager": "file:modules/managers/GuildManager",
+    "@managers/lobby": "file:modules/managers/LobbyManager",
+    "@managers/UserManager": "file:modules/managers/UsersManager",
+    "@supabase/supabase-js": "^1.35.3",
+    "discord-api-types": "^0.31.0",
+    "discord.js": "^13.6.0",
+    "dotenv": "^16.0.0",
+    "vm2": "^3.9.9"
+  }
+}
