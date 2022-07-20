@@ -247,6 +247,7 @@ class LobbyInfo {
     setTimeout(() => this.#removeHandlers(), TIMEOUT_MS);
   }
 
+  #handle
   #setHandlers(){
     this.#handle = true;
 
