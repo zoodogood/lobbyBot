@@ -27,7 +27,8 @@ class Event {
     const description = `К лобби "${ lobby.name }" присоединился новый участник.\n${ cells }\n\n${ isFill ? fillDescription : "" }`;
 
     const message = new MessageConstructor({
-      description
+      description,
+      color: "#7e8a9c"
     });
 
     author.send(message);
@@ -40,7 +41,8 @@ class Event {
     lobby.players.forEach(id => {
       const message = new MessageConstructor({
         title: "Лобби к которому Вы ранее присоединялись заполнено",
-        description: `Перейдите на сервер, чтобы подтвердить вашу готовность. Игра начнется как только создатель лобби или модераторы сервера запустят матч.\n**Имя лобби:** "${ lobby.name }"`
+        description: `Перейдите на сервер, чтобы подтвердить вашу готовность. Игра начнется как только создатель лобби или модераторы сервера запустят матч.\n**Имя лобби:** "${ lobby.name }"`,
+        color: "#78bb5f"
       });
 
       usersCollection.get( id )
