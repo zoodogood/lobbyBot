@@ -56,9 +56,15 @@ class LobbyManager {
   static async restoreFromDatabase(){
     const data = await DatabaseLobbyAPI.getAllLobbies();
 
-    const toLobby = ({name, authorId, guildId, players, createdTimestamp}) => {
+    const toLobby = ({name, authorId, guildId, players, createdTimestamp, game, mode, description}) => {
+      const lobby = this._initLobby(name, {authorId, guildId, mode, description});
 
-      const lobby = this._initLobby(name, {authorId, guildId});
+      if (lobby.game){
+        const data = JSON.parse(lobby.game);
+        lobby.createGame();
+        lobby.game.assignData(data);
+      }
+
       lobby.players = players;
       lobby.createdTimestamp = createdTimestamp;
       return lobby;
@@ -118,6 +124,7 @@ class DatabaseLobbyAPI {
 
     data.forEach(lobbyData => {
       const players = JSON.parse(lobbyData.players);
+
       players.cells = lobbyData.playersCells;
 
       lobbyData.players = players;
@@ -136,7 +143,8 @@ class DatabaseLobbyAPI {
       players: JSON.stringify(lobby.players),
       playersCells: lobby.players.cells,
       description: lobby.description,
-      mode: lobby.mode
+      mode: lobby.mode,
+      game: JSON.stringify(lobby.game)
     };
 
     const response = await database
@@ -163,5 +171,6 @@ class DatabaseLobbyAPI {
       .match({ name: lobby.name });
   }
 }
+
 
 export default LobbyManager;
