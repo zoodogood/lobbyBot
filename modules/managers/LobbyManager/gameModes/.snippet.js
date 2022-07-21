@@ -1,6 +1,6 @@
 
 class Mode {
-  static BUTTON = {
+  static button = {
     label: "LABEL",
     value: "value === <MODE_FILE_NAME>",
     description: "DESCRIPTION"
