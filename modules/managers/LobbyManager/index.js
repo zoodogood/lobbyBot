@@ -154,15 +154,6 @@ class DatabaseLobbyAPI {
   }
 
 
-  static async updatePlayersList(lobby){
-    const playersJSON = JSON.stringify(lobby.players);
-    const response = await database
-      .from("lobbies")
-      .update({ players: playersJSON })
-      .match({  name: lobby.name });
-
-    return response;
-  }
 
   static async deleteLobby(lobby){
     const response = await database
