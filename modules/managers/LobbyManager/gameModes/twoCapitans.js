@@ -12,6 +12,11 @@ class Mode {
     const teamAssemler = new AssembleTeam({lobby, interaction});
     await teamAssemler.createTeam();
 
+    // if interrupted
+    if (lobby.game === null)
+      return;
+
+    lobby.game.start();
 
 
   }
@@ -20,11 +25,6 @@ class Mode {
 
   }
 
-  static async assembleTeam({lobby, interaction}){
-
-
-    const message = 1;
-  }
 }
 
 class AssembleTeam {
@@ -102,6 +102,8 @@ class AssembleTeam {
       if (!componentInteraction){
         const message = this.createMessage({chosesNow: teamIndex, freePlayers, type: "INTERRUPTED"});
         sendMessage(message);
+
+        this.lobby.game = null;
         break;
       }
 
@@ -114,7 +116,16 @@ class AssembleTeam {
       teamIndex %= this.#TEAMS_COUNT;
     }
 
-    this.createMessage({chosesNow: teamIndex, freePlayers, type: "END"});
+
+    if (this.lobby.game === null)
+      return;
+
+    const displayEnd = () => {
+      const message = this.createMessage({chosesNow: teamIndex, freePlayers, type: "SUCESS_END"});
+      await sendMessage(messageContent);
+    }
+    displayEnd();
+
   }
 
   #handleComponent(componentInteraction, teamIndex){
@@ -127,7 +138,7 @@ class AssembleTeam {
 
     if (componentInteraction.user.id !== leader){
       componentInteraction.reply({ content: `Сейчас выбор может сделать только <@${ leader }>`, ephemeral: true });
-      return;
+      return false;
     }
 
     teams.at(teamIndex).members.push(userId);
@@ -150,7 +161,7 @@ class AssembleTeam {
         content: "Создание команд прервано",
         getDescription: () => "Время вышло."
       },
-      END: {
+      SUCESS_END: {
         content: "Создание команд завершено",
         getDescription: () => "Обе команды успешно сформированы — свободных игроков нет.\n\nС этого момента игра считается начавшейся.\nМодераторам доступна кнопка по нажатию которой все игроки получат очки рейтинга."
       }
