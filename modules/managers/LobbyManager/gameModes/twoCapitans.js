@@ -1,6 +1,10 @@
 import DiscordUtil from '@bot/discord-util';
 const {MessageConstructor} = DiscordUtil;
 
+import LobbyManager from '@managers/lobby';
+
+const EmojiColors = ["🟣", "🔵"];
+
 class Mode {
   static button = {
     label: "Два капитана",
@@ -17,11 +21,12 @@ class Mode {
       return;
 
     lobby.game.start();
-
-
+    LobbyManager.update(lobby);
   }
 
-  static onEnd({lobby, interaction}){
+  static async onEnd({lobby, interaction}){
+    const summarize = new Summarize({lobby, interaction});
+    summarize.takeWinners(interaction);
 
   }
 
@@ -107,12 +112,13 @@ class AssembleTeam {
         break;
       }
 
-      this.#handleComponent(componentInteraction, teamIndex);
+      this.#handleComponent({componentInteraction, teamIndex, freePlayers});
 
       if (componentInteraction.result === false){
         continue;
       }
 
+      teamIndex++;
       teamIndex %= this.#TEAMS_COUNT;
     }
 
@@ -120,15 +126,15 @@ class AssembleTeam {
     if (this.lobby.game === null)
       return;
 
-    const displayEnd = () => {
-      const message = this.createMessage({chosesNow: teamIndex, freePlayers, type: "SUCESS_END"});
+    const displayEnd = async () => {
+      const messageContent = this.createMessage({chosesNow: teamIndex, freePlayers, type: "SUCESS_END"});
       await sendMessage(messageContent);
     }
     displayEnd();
 
   }
 
-  #handleComponent(componentInteraction, teamIndex){
+  #handleComponent({componentInteraction, teamIndex, freePlayers}){
     const lobby = this.lobby;
 
     const teams = lobby.game.teams;
@@ -142,6 +148,7 @@ class AssembleTeam {
     }
 
     teams.at(teamIndex).members.push(userId);
+    freePlayers.splice( freePlayers.indexOf(userId), 1 );
 
     componentInteraction.reply({ content: `<@${ userId }> присоединился к команде #${ teamIndex + 1 }`, ephemeral: true });
   }
@@ -167,11 +174,10 @@ class AssembleTeam {
       }
     }
 
-    const colors = ["🟣", "🔵"];
 
     const fields = teams
       .map((team, index) => {
-        const name = `${ colors.at(index) } Команда #${ index + 1 }`;
+        const name = `${ EmojiColors.at(index) } Команда #${ index + 1 }`;
 
         const leader = `**Лидер:**\n<@${ team.leader }>`;
         const membersList = team.members.map(userId => `· <@${ userId }>`);
@@ -190,6 +196,11 @@ class AssembleTeam {
       return {label, value};
     });
 
+    if (!componentOptions.length){
+      componentOptions.push({label: "null", value: "null"});
+    }
+
+
     const message = new MessageConstructor({
       title: TYPES_CONTENT[type].content,
       description: TYPES_CONTENT[type].getDescription(),
@@ -199,13 +210,63 @@ class AssembleTeam {
         type: 3,
         customId: "_ignore.mode.twoCapitans.choseMember",
         maxValues: 1,
-        options:
-        componentOptions,
+        options: componentOptions,
         disabled: type !== "GOING_ON"
       }
     });
 
     return message;
+  }
+}
+
+class Summarize {
+  constructor({lobby, interaction}){
+    this.lobby = lobby;
+    this.interaction = interaction;
+  }
+
+  async takeWinners(interaction){
+
+    const whenComponent = async (message) => {
+      const collectorOptions = {
+        filter: (interaction) => true,
+        time: 15_000
+      }
+      const componentInteraction = await message.awaitMessageComponent(collectorOptions)
+        .catch(() => responce.delete());
+
+      return componentInteraction ?? {values: []};
+    }
+
+    const teams = this.lobby.game.teams;
+
+    const componentOptions = teams
+      .map((team, index) => {
+        const emoji = EmojiColors.at(index);
+        const label = `Команда #${ index + 1 }`;
+        const value = index;
+
+        return {emoji, label, value};
+      });
+
+    const message = new MessageConstructor({
+      fetchReply: true,
+      description: "12233",
+      components: {
+        placeholder: "Выбрать команду",
+        type: 3,
+        customId: "_ignore.mode.twoCapitans.choseWinners",
+        maxValues: 1,
+        options: componentOptions,
+      }
+    });
+
+    const responce = interaction.reply(message);
+
+    const {values: [value]} = await whenComponent(responce);
+
+    if (!value)
+      return null;
   }
 }
 
