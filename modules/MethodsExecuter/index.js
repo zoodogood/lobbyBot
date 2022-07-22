@@ -10,6 +10,9 @@ class MethodsExecuter {
     const  [type, identify, method, ...rest] = expression.split( this.constructor.SEPARATOR );
 
     const component = this.constructor.supportedComponents[type];
+    if (!component)
+      return null;
+      
     const list = typeof component.list === "function" ?
       component.list(this) : component.list;
 
