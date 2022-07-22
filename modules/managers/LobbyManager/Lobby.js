@@ -1,4 +1,5 @@
 import EventsEmitter from 'events';
+import LobbyGame from './LobbyGame.js';
 
 function resolveId(data){
   if (typeof data === "object")
@@ -88,6 +89,11 @@ class Lobby extends EventsEmitter {
   #checkFilling(){
     if (this.players.length >= this.players.cells)
       this.emit("fill");
+  }
+
+  createGame(){
+    this.game = new LobbyGame();
+    return this.game;
   }
 }
 
