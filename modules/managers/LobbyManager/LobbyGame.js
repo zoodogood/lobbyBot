@@ -36,6 +36,11 @@ class LobbyGame {
     Object.assign(this, data);
   }
 
+  start(){
+    this.started = true;
+    this.startedTimestamp = Date.now();
+  }
+
   static modesList = modesList;
 }
 
