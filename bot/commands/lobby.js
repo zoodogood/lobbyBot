@@ -91,7 +91,7 @@ class Command extends BaseCommand {
       },
       {
         description: "Заканчивает игру. Если команд несколько, позволяет указать победившую.",
-        condition: ({user, member}) => lobby.started &&
+        condition: ({user, member}) => lobby.game?.started &&
           (lobby.authorId === user.id || member.permissions.has("MANAGE_GUILD")),
 
         button: { style: 2, type: 2, customId: `event.lobbyEvents.onGameEnd.${ lobby.name }`, label: `Завершить матч!` }
