@@ -80,10 +80,7 @@ class DatabaseUserAPI {
     const response = await database
       .from("users")
       .insert([{
-        id:  user.id,
-        mmr: user.mmr,
-        eloCoins: user.eloCoins,
-        messages: user.messages
+        id: user.id
       }]);
 
     return response;
