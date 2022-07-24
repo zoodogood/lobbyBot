@@ -24,8 +24,8 @@ const modesList = await initModes();
 
 
 class LobbyGame {
-  constructor(){
-
+  constructor(mode){
+    this.mode = mode;
   }
 
   createTeams(teams){
@@ -39,6 +39,10 @@ class LobbyGame {
   start(){
     this.started = true;
     this.startedTimestamp = Date.now();
+  }
+
+  get modeInfo(){
+    return this.constructor.modesList.get(this.mode);
   }
 
   static modesList = modesList;

@@ -56,12 +56,12 @@ class LobbyManager {
   static async restoreFromDatabase(){
     const data = await DatabaseLobbyAPI.getAllLobbies();
 
-    const toLobby = ({name, authorId, guildId, players, createdTimestamp, game, mode, description}) => {
-      const lobby = this._initLobby(name, {authorId, guildId, mode, description});
+    const toLobby = ({name, authorId, guildId, players, createdTimestamp, game, description}) => {
+      const lobby = this._initLobby(name, {authorId, guildId, description});
 
       if (lobby.game){
         const data = JSON.parse(lobby.game);
-        lobby.createGame();
+        lobby.createGame(data.mode);
         lobby.game.assignData(data);
       }
 

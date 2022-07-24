@@ -6,6 +6,8 @@ import { Modal } from "discord.js";
 import DiscordUtil from '@bot/discord-util';
 const {MessageConstructor, ComponentsSimplify} = DiscordUtil;
 
+import MethodExecuter from '@global/methods-executer';
+
 
 class Command extends BaseCommand {
   constructor() {
@@ -84,10 +86,11 @@ class Command extends BaseCommand {
     const BUTTONS = [
       {
         description: "Начинает игру. Только когда лобби заполнено!",
-        condition: ({user, member}) => lobby.authorId === user.id
+        condition: ({user, member}) => !lobby.game?.started
+          &&  lobby.authorId === user.id
           && lobby.players.length === lobby.players.cells,
 
-        button: { style: 3, type: 2, customId: `event.lobbyEvents.onGameStart.${ lobby.name }`, label: `Начать!` }
+        button: { style: 3, type: 2, customId: `command.lobby.modalSelectMode.${ lobby.name }`, label: `Начать!` }
       },
       {
         description: "Заканчивает игру. Если команд несколько, позволяет указать победившую.",
@@ -110,11 +113,6 @@ class Command extends BaseCommand {
         description: "Доступно, если вы находитесь в этом лобби.",
         condition: ({user}) => lobby.players.includes(user.id),
         button: { style: 2, type: 2, customId: `command.lobby.leavePlayer.${ lobby.name }`, label: "Покинуть лобби", emoji: "🚪" }
-      },
-      {
-        description: "Основатель лобби может указать режим игры. От этого могут зависеть результаты матча.",
-        condition: ({user}) => lobby.authorId === user.id,
-        button: { style: 2, type: 2, customId: `command.lobby.modalSelectMode.${ lobby.name }`, label: `Выбрать режим`, emoji: "🧪" }
       },
       {
         description: "Все пользователи принудительно покинут это лобби.",
@@ -141,6 +139,37 @@ class Command extends BaseCommand {
       components
     });
     interaction.reply(message);
+  }
+
+
+  modalSetDescription([id, ...rest], interaction){
+    const lobby = LobbyManager.lobbies.get(id);
+    const value = lobby.description ?? null;
+
+    const components = new ComponentsSimplify().simplify({
+      type: "TEXT_INPUT",
+      value,
+      style: 2,
+      placeholder: "Введите текст",
+      customId: `command.lobby.setDescription.input`,
+      label: "Описание",
+      required: true
+    });
+
+
+    const modal = new Modal({ customId: `command.lobby.setDescription.${ id }`, title: "Описание лобби", components });
+    interaction.showModal(modal);
+  }
+
+  setDescription([id, ...rest], interaction){
+    const value = interaction.fields.getField("command.lobby.setDescription.input").value;
+
+    const lobby = LobbyManager.lobbies.get(id);
+    lobby.setDescription(value);
+    LobbyManager.update(lobby);
+
+
+    interaction.reply({ ephemeral: true, content: "Успешно" });
   }
 
 
@@ -173,41 +202,9 @@ class Command extends BaseCommand {
 
     const [mode] = interaction.fields.getField("command.lobby.selectMode.input").value;
 
+    new MethodExecuter().execute(`event.lobbyEvents.onGameStart.${ lobby.name }`, {mode, interaction});
 
-    lobby.setMode(mode ?? null);
-    LobbyManager.update(lobby);
-
-    interaction.reply({ ephemeral: true, content: "Успешно" });
-  }
-
-  modalSetDescription([id, ...rest], interaction){
-    const lobby = LobbyManager.lobbies.get(id);
-    const value = lobby.description ?? null;
-
-    const components = new ComponentsSimplify().simplify({
-      type: "TEXT_INPUT",
-      value,
-      style: 2,
-      placeholder: "Введите текст",
-      customId: `command.lobby.setDescription.input`,
-      label: "Описание",
-      required: true
-    });
-
-
-    const modal = new Modal({ customId: `command.lobby.setDescription.${ id }`, title: "Описание лобби", components });
-    interaction.showModal(modal);
-  }
-
-  setDescription([id, ...rest], interaction){
-    const value = interaction.fields.getField("command.lobby.setDescription.input").value;
-
-    const lobby = LobbyManager.lobbies.get(id);
-    lobby.setDescription(value);
-    LobbyManager.update(lobby);
-
-
-    interaction.reply({ ephemeral: true, content: "Успешно" });
+    interaction.reply({ ephemeral: true, content: "111" });
   }
 
   static data = {
@@ -316,7 +313,8 @@ class LobbyInfo {
 
     const description = lobby.description ?? i18n("defaultLobbyDescription");
     const fields = [
-      {name: "Слоты", value: cells},
+      {name: "Слоты", value: cells, inline: true},
+      {name: "Основал", value: `<@${ lobby.authorId }>`, inline: true}
     ];
 
 
