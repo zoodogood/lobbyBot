@@ -23,7 +23,7 @@ updateDescription
 */
 
 class Lobby extends EventsEmitter {
-  constructor(name, {playersCount = 6, authorId: userResolable, guildId: guildResolable, description, mode}){
+  constructor(name, {playersCount = 6, authorId: userResolable, guildId: guildResolable, description}){
     super();
 
     this.name = name;
@@ -34,7 +34,6 @@ class Lobby extends EventsEmitter {
     this.guildId  = resolveId(guildResolable);
 
     this.description = description;
-    this.mode = mode;
 
     this.createdTimestamp = Date.now();
   }
@@ -80,19 +79,13 @@ class Lobby extends EventsEmitter {
     this.emit("updateDescription", description);
   }
 
-  setMode(mode){
-    this.mode = mode;
-    this.emit("updateGameMode", mode);
-  }
-
-
   #checkFilling(){
     if (this.players.length >= this.players.cells)
       this.emit("fill");
   }
 
-  createGame(){
-    this.game = new LobbyGame();
+  createGame(mode){
+    this.game = new LobbyGame(mode);
     return this.game;
   }
 }
