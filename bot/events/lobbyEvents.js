@@ -5,17 +5,21 @@ const {MessageConstructor} = DiscordUtil;
 
 class Event {
 
-  async onGameStart([id, ...rest], interaction){
+  async onGameStart([id, ...rest], {interaction, mode}){
     const lobby = LobbyManager.lobbies.get(id);
 
-    const game = lobby.createGame();
-    const modeRules = game.constructor.modesList.get(lobby.mode);
+    const game = lobby.createGame(mode);
+    const modeRules = game.modeInfo;
 
     modeRules.onStart({game, interaction, lobby});
   }
 
   onGameEnd([id, ...rest], interaction){
+    const lobby = LobbyManager.lobbies.get(id);
+    const game = lobby.game;
+    const modeRules = game.modeInfo;
 
+    modeRules.onEnd({game, interaction, lobby});
   }
 
   onEnter([id, ...rest]){
