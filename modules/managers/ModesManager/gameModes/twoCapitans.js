@@ -1,7 +1,8 @@
 import DiscordUtil from '@bot/discord-util';
 const {MessageConstructor} = DiscordUtil;
 
-import LobbyManager from '@managers/lobby';
+import UserManager from '@managers/UserManager';
+import GuildManager from '@managers/GuildManager';
 
 const EmojiColors = ["🟣", "🔵"];
 
@@ -21,13 +22,22 @@ class Mode {
       return;
 
     lobby.game.start();
-    LobbyManager.update(lobby);
+    // LobbyManager.update(lobby);
   }
 
   static async onEnd({lobby, interaction}){
     const summarize = new Summarize({lobby, interaction});
-    summarize.takeWinners(interaction);
+    const winners = await summarize.takeWinners({interaction});
 
+    if (!winners)
+      return;
+
+    const table = summarize.assignRanks({interaction, winners});
+
+
+    summarize.sendResults({interaction, winners});
+    summarize.sendAudits({interaction, table});
+    lobby.game = null;
   }
 
 }
@@ -87,7 +97,7 @@ class AssembleTeam {
     const whenComponent = async (message) => {
       const collectorOptions = {
         filter: (interaction) => true,
-        time: 15_000
+        time: 60_000
       }
       const componentInteraction = await message.awaitMessageComponent(collectorOptions)
         .catch(() => {});
@@ -144,7 +154,8 @@ class AssembleTeam {
 
     if (componentInteraction.user.id !== leader){
       componentInteraction.reply({ content: `Сейчас выбор может сделать только <@${ leader }>`, ephemeral: true });
-      return false;
+      componentInteraction.result = false;
+      return;
     }
 
     teams.at(teamIndex).members.push(userId);
@@ -197,7 +208,7 @@ class AssembleTeam {
     });
 
     if (!componentOptions.length){
-      componentOptions.push({label: "null", value: "null"});
+      componentOptions.push({label: "Выбрано", value: "null"});
     }
 
 
@@ -225,33 +236,53 @@ class Summarize {
     this.interaction = interaction;
   }
 
-  async takeWinners(interaction){
+  averageMmrOfAll(users){
+    return users.reduce((acc, user) => acc + user.mmr, 0) / users.length;
+  }
 
-    const whenComponent = async (message) => {
-      const collectorOptions = {
-        filter: (interaction) => true,
-        time: 15_000
-      }
-      const componentInteraction = await message.awaitMessageComponent(collectorOptions)
-        .catch(() => responce.delete());
-
-      return componentInteraction ?? {values: []};
-    }
+  async takeWinners({interaction}){
 
     const teams = this.lobby.game.teams;
+
+    const whenComponent = async (message) => {
+      return new Promise(resolvePromise => {
+        const collectorOptions = {
+          time: 15_000
+        }
+        const collector = message.createMessageComponentCollector(collectorOptions);
+
+        const onCollect = (interaction) => {
+          const member = interaction.member;
+          const hasPermissions = this.lobby.authorId === member.id || member.permissions.has("MANAGE_GUILD");
+          if (!hasPermissions){
+            interaction.reply({content: "Вы не можете указать команду победителей", ephemeral: true});
+            return;
+          }
+
+          interaction.reply({ content: "Успешно", ephemeral: true });
+          resolvePromise(interaction);
+        };
+
+        collector.on("collect", onCollect);
+        collector.on("end", () => resolvePromise(null));
+      })
+    }
+
+
 
     const componentOptions = teams
       .map((team, index) => {
         const emoji = EmojiColors.at(index);
         const label = `Команда #${ index + 1 }`;
-        const value = index;
+        const value = index.toString();
 
         return {emoji, label, value};
       });
 
+
     const message = new MessageConstructor({
       fetchReply: true,
-      description: "12233",
+      description: "Выберите победившую команду",
       components: {
         placeholder: "Выбрать команду",
         type: 3,
@@ -261,12 +292,105 @@ class Summarize {
       }
     });
 
-    const responce = interaction.reply(message);
+    const responce = await interaction.reply(message);
 
-    const {values: [value]} = await whenComponent(responce);
+    const {values: [value]} = await whenComponent(responce) ?? {values: []};
+
+    responce.delete();
 
     if (!value)
       return null;
+
+    return {winnersIndex: value};
+  }
+
+  async sendResults({interaction, winners}){
+    const message = new MessageConstructor({
+      description: `Победила команда #${ winners.winnersIndex + 1 }.`,
+      footer: { text: `Игра длилась ${ Date.now() - lobby.game.startedTimestamp }мс` }
+    });
+    interaction.channel.send(message);
+  }
+
+  sendAudits({interaction, table}){
+    const guildData = GuildManager.getGuild(interaction.guild);
+
+    const channelId = guildData.rankStatsChannelId;
+
+    if (!channelId){
+      return;
+    }
+
+    const channelsCache = interaction.client.channels.cache;
+    const channel = channelsCache.get(channelId);
+
+    const message = new MessageConstructor({
+      description: JSON.stringify(table);
+    });
+    channel.send(message);
+  }
+
+  assignRanks({interaction, winners}){
+    const lobby = this.lobby;
+    const teams = lobby.game.teams;
+
+    const teamToUsers = (team) => [team.leader, ...team.members]
+      .map(userId => UserManager.getUser(userId));
+
+
+    teams.forEach(calculateAverageMmr);
+
+    const losesTeams = teams.filter((team, index)   => index !== winners.winnersIndex);
+    const winnersTeams = teams.filter((team, index) => index === winners.winnersIndex);
+
+    losesTeams.forEach(team => {
+      const users = teamToUsers(team);
+      users.forEach(user => ++user.matchCount && ++user.matchLoses);
+    });
+
+    winnersTeams.forEach(team => {
+      const users = teamToUsers(team);
+      users.forEach(user => ++user.matchCount && ++user.matchWons);
+    });
+
+
+    const calculateMmr = (team, user) => {
+      const DEFAULT = 20;
+      const leaderCoeffient = user.id === team.leader ? 1.05 : 1;
+      const isWinnerCoefficient = winnersTeams.includes(team) ? 1 : -0.9;
+
+      const averageAll  = this.averageMmrOfAll( teams.reduce((acc, team) => acc.concat( teamToUsers(team) ), []) );
+      const averageTeam = this.averageMmrOfAll( teamToUsers(team) );
+
+      const difference = averageAll - team.averageMmr;
+
+      return Math.round(
+        (DEFAULT + difference / 30) * leaderCoeffient * isWinnerCoefficient
+      );
+    };
+
+    // id: {past, fresh};
+    const table = {};
+
+    teams.forEach(team => {
+      const users = teamToUsers(team);
+
+      for (const user of users){
+
+        const tableCell = table[user.id] = {};
+        tableCell.past ||= user.mmr;
+        tableCell.pastRank ||= user.getRank(interaction)?.roleId;
+
+        user.mmr += calculateMmr(user, team);
+
+        tableCell.fresh = user.mmr;
+        tableCell.freshRank ||= user.getRank(interaction)?.roleId;
+      }
+
+    });
+
+
+    return table;
   }
 }
 
