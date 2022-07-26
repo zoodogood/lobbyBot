@@ -80,14 +80,14 @@ class Command extends BaseCommand {
   }
 
 
-  takeButtons([id, ...rest], interaction){
-    const lobby = LobbyManager.lobbies.get(id);
+  takeButtons(lobbyId, interaction){
+    const lobby = LobbyManager.lobbies.get(lobbyId);
 
     const BUTTONS = [
       {
         description: "Начинает игру. Только когда лобби заполнено!",
         condition: ({user, member}) => !lobby.game?.started
-          &&  lobby.authorId === user.id
+          && lobby.authorId === user.id
           && lobby.players.length === lobby.players.cells,
 
         button: { style: 3, type: 2, customId: `command.lobby.modalSelectMode.${ lobby.name }`, label: `Начать!` }
@@ -138,6 +138,12 @@ class Command extends BaseCommand {
       ephemeral: true,
       components
     });
+
+    return message;
+  }
+
+  showButtons([id, ...rest], interaction){
+    const message = this.takeButtons(id, interaction);
     interaction.reply(message);
   }
 
@@ -193,18 +199,19 @@ class Command extends BaseCommand {
     });
 
 
-    const modal = new Modal({ customId: `command.lobby.selectMode.${ id }`, title: "Установите канал", components });
+    const modal = new Modal({ customId: `command.lobby.selectMode.${ id }`, title: "Выберите режим игры", components });
     interaction.showModal(modal);
   }
 
-  selectMode([id, ...rest], interaction){
+  async selectMode([id, ...rest], interaction){
     const lobby = LobbyManager.lobbies.get(id);
 
     const [mode] = interaction.fields.getField("command.lobby.selectMode.input").value;
 
-    new MethodExecuter().execute(`event.lobbyEvents.onGameStart.${ lobby.name }`, {mode, interaction});
+    await new MethodExecuter().execute(`event.lobbyEvents.onGameStart.${ lobby.name }`, {mode, interaction});
 
-    interaction.reply({ ephemeral: true, content: "111" });
+    const message = this.takeButtons(id, interaction);
+    interaction.update(message);
   }
 
   static data = {
@@ -326,7 +333,7 @@ class LobbyInfo {
       color: Command.EMBED_COLOR,
       components: [
         { style: 3, type: 2, customId: `command.lobby.enterPlayer.${ lobby.name }`, label: "Войти в лобби!" },
-        { style: 2, type: 2, customId: `command.lobby.takeButtons.${ lobby.name }`, label: "Посмотреть другие взаимодействия", emoji: "🔧" }
+        { style: 2, type: 2, customId: `command.lobby.showButtons.${ lobby.name }`, label: "Посмотреть другие взаимодействия", emoji: "🔧" }
 
       ],
       fetchReply: true,
