@@ -11,15 +11,15 @@ class Event {
     const game = lobby.createGame(mode);
     const modeRules = game.modeInfo;
 
-    modeRules.onStart({game, interaction, lobby});
+    await modeRules.onStart({game, interaction, lobby});
   }
 
-  onGameEnd([id, ...rest], interaction){
+  async onGameEnd([id, ...rest], interaction){
     const lobby = LobbyManager.lobbies.get(id);
     const game = lobby.game;
     const modeRules = game.modeInfo;
 
-    modeRules.onEnd({game, interaction, lobby});
+    await modeRules.onEnd({game, interaction, lobby});
   }
 
   onEnter([id, ...rest]){

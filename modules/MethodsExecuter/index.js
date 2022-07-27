@@ -12,7 +12,7 @@ class MethodsExecuter {
     const component = this.constructor.supportedComponents[type];
     if (!component)
       return null;
-      
+
     const list = typeof component.list === "function" ?
       component.list(this) : component.list;
 
@@ -20,11 +20,11 @@ class MethodsExecuter {
     return this.#executer(target, method, rest, ...args);
   }
 
-  #executer(target, method, rest, ...args){
+  async #executer(target, method, rest, ...args){
     if (!( method in target))
       throw new Error(`${ target.constructor.name }, ${ method } is undefined`);
 
-    return target[ method ].call(target, rest, ...args);
+    return await target[ method ].call(target, rest, ...args);
   }
 
 
