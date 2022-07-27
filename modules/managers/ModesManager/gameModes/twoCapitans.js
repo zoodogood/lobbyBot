@@ -35,8 +35,8 @@ class Mode {
     const table = summarize.assignRanks({interaction, winners});
 
 
-    summarize.sendResults({interaction, winners});
-    summarize.sendAudits({interaction, table});
+    summarize.sendResults({interaction, winners, lobby});
+    summarize.sendAudits({interaction, table, lobby});
     lobby.game = null;
   }
 
@@ -301,10 +301,10 @@ class Summarize {
     if (!value)
       return null;
 
-    return {winnersIndex: value};
+    return { winnersIndex: Number(value) };
   }
 
-  async sendResults({interaction, winners}){
+  async sendResults({interaction, winners, lobby}){
     const message = new MessageConstructor({
       description: `Победила команда #${ winners.winnersIndex + 1 }.`,
       footer: { text: `Игра длилась ${ Date.now() - lobby.game.startedTimestamp }мс` }
@@ -324,8 +324,22 @@ class Summarize {
     const channelsCache = interaction.client.channels.cache;
     const channel = channelsCache.get(channelId);
 
+    const description = Object.entries(table)
+      .map(([userId, {past, fresh, pastRank, freshRank}]) => {
+        let rankChunk = "";
+        if (pastRank !== freshRank){
+          const toString = (rank) => rank ? `<@&${ rank }>` : "N/A";
+          rankChunk = `**Ранг:** ${ toString(pastRank) } => ${ toString(freshRank) }`;
+        }
+
+        const mmr = `**Очки:** ${ past } ${ fresh > past ? "+" : "-" } ${ Math.abs(fresh - past) } = ${ fresh }`;
+
+        return `<@${ userId }> ${ mmr } ${ rankChunk }`;
+      })
+      .join("\n");
+
     const message = new MessageConstructor({
-      description: JSON.stringify(table);
+      description
     });
     channel.send(message);
   }
@@ -334,11 +348,11 @@ class Summarize {
     const lobby = this.lobby;
     const teams = lobby.game.teams;
 
+
     const teamToUsers = (team) => [team.leader, ...team.members]
       .map(userId => UserManager.getUser(userId));
 
 
-    teams.forEach(calculateAverageMmr);
 
     const losesTeams = teams.filter((team, index)   => index !== winners.winnersIndex);
     const winnersTeams = teams.filter((team, index) => index === winners.winnersIndex);
@@ -359,10 +373,14 @@ class Summarize {
       const leaderCoeffient = user.id === team.leader ? 1.05 : 1;
       const isWinnerCoefficient = winnersTeams.includes(team) ? 1 : -0.9;
 
+
       const averageAll  = this.averageMmrOfAll( teams.reduce((acc, team) => acc.concat( teamToUsers(team) ), []) );
       const averageTeam = this.averageMmrOfAll( teamToUsers(team) );
 
-      const difference = averageAll - team.averageMmr;
+      const difference = Math.max(
+        Math.sqrt((averageAll - averageTeam) / 10),
+        -DEFAULT + 1
+      );
 
       return Math.round(
         (DEFAULT + difference / 30) * leaderCoeffient * isWinnerCoefficient
@@ -381,15 +399,19 @@ class Summarize {
         tableCell.past ||= user.mmr;
         tableCell.pastRank ||= user.getRank(interaction)?.roleId;
 
-        user.mmr += calculateMmr(user, team);
+        user.mmr += calculateMmr(team, user);
+        user.mmr = Math.max(user.mmr, 0);
 
         tableCell.fresh = user.mmr;
-        tableCell.freshRank ||= user.getRank(interaction)?.roleId;
+        tableCell.freshRank = user.getRank(interaction)?.roleId;
       }
 
     });
 
-
+    teams.forEach(team => {
+      const users = teamToUsers(team);
+      users.forEach((user) => UserManager.update(user));
+    })
     return table;
   }
 }
