@@ -19,21 +19,27 @@ class Command extends BaseCommand {
     interaction.reply(message);
   }
 
+  buttonBack([...rest], interaction){
+    const message = this.createMessage({interaction});
+    interaction.update(message);
+  }
+
   createMessage({interaction}){
     let { rankRoles, rankStatsChannelId } = GuildManager.getGuild( interaction.guild );
 
     if (!rankRoles)
       rankRoles = [];
 
-    const author = {name: interaction.guild.name, iconURL: interaction.guild.iconURL()};
+    const author = { name: "Настройки Бота", iconURL: interaction.guild.iconURL() };
+    const description = ``;
 
     const message = new MessageConstructor({
       author,
-      title: "Настройки Бота",
+      description,
       color: "#7e1503",
       fields: [
-        { name: "Ранговые Роли", value: `(${ Util.ending(rankRoles.length, "рол", "ей", "ь", "и") })`, inline: true },
-        { name: "Канал для отправки результатов рангов", value: `<#${ rankStatsChannelId }>`, inline: true }
+        { name: "Ранги:", value: `(${ Util.ending(rankRoles.length, "рол", "ей", "ь", "и") })`, inline: true },
+        { name: "Канал для отправки\nрезультатов матчей:", value: `<#${ rankStatsChannelId }>`, inline: true }
 
       ],
       components: [
@@ -48,12 +54,20 @@ class Command extends BaseCommand {
 
 
   rankRoles([methodName, ...rest], interaction){
+
     const rankRoles = new RankRolesUI();
     return rankRoles[methodName](rest, interaction);
   }
 
 
   modalSetRankStatsChannel([...rest], interaction){
+
+    const hasPermissions = interaction.member.permissions.has("MANAGE_GUILD");
+    if (!hasPermissions){
+      interaction.reply({ content: `Требуется право Управления сервером`, ephemeral: true });
+      return;
+    }
+
     const components = new ComponentsSimplify().simplify({
       style: 1,
       type: "TEXT_INPUT",
@@ -116,7 +130,7 @@ class RankRolesUI {
 
   run([...rest], interaction){
     const message = this.createMessage({interaction});
-    interaction.reply(message);
+    interaction.update(message);
   }
 
 
@@ -136,8 +150,14 @@ class RankRolesUI {
       .map(data => data.split(":"))
       .sort(([_1, a], [_2, b]) => a - b);
 
+    const toRoman = (digit) => {
+      const ROMAN = ["nulla", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"];
+      return ROMAN[digit];
+    }
+
+
     const toField = ([roleId, mmrThreshloder], i) => {
-      const name = `**${ i + 1 }**.`;
+      const name = `**${ toRoman(i + 1) }**.`;
       const SPACE = "⠀";
 
       const value = `<@&${ roleId }> (${ mmrThreshloder });${ SPACE.repeat(4) }`;
@@ -146,15 +166,25 @@ class RankRolesUI {
     };
 
     const fields = rolesData.length ?
-      rolesData.map(toField) :
+      rolesData.map(toField).slice(0, 20) :
       [{ name: "Нет ни одной роли.", value: "Следует добавить!"}];
+
+
+    const description = `Вы просматриваете список рангов 🏆. Ранги выдаются игрокам при достижении определенного рейтинга, который они могут получить в соревнованиях.\n\nРангов создано: (${ rolesData.length }/20)`;
 
     const message = new MessageConstructor({
       ephemeral: true,
+      description,
       fields,
       color: "#010101",
       components: [
         [
+          {
+            type: "BUTTON",
+            customId: "command.settings.buttonBack",
+            style: 2,
+            label: "Назад",
+          },
           {
             type: "BUTTON",
             customId: "command.settings.rankRoles.modalEdit",
@@ -184,6 +214,13 @@ class RankRolesUI {
 
 
   modalEdit([...rest], interaction){
+
+    const hasPermissions = interaction.member.permissions.has("MANAGE_GUILD");
+    if (!hasPermissions){
+      interaction.reply({ content: `Требуется право Управления сервером`, ephemeral: true });
+      return;
+    }
+
     const guildData = GuildManager.getGuild( interaction.guild.id );
     const rolesData = (guildData.rankRoles ?? [])
       .map(data => data.split(":"))
@@ -300,6 +337,13 @@ class RankRolesUI {
   }
 
   modalCreate([...rest], interaction){
+
+    const hasPermissions = interaction.member.permissions.has("MANAGE_GUILD");
+    if (!hasPermissions){
+      interaction.reply({ content: `Требуется право Управления сервером`, ephemeral: true });
+      return;
+    }
+
     const components = new ComponentsSimplify().simplify([
       [{
         style: 1,
@@ -371,6 +415,13 @@ class RankRolesUI {
   }
 
   removeAll([...rest], interaction){
+
+    const hasPermissions = interaction.member.permissions.has("MANAGE_GUILD");
+    if (!hasPermissions){
+      interaction.reply({ content: `Требуется право Управления сервером`, ephemeral: true });
+      return;
+    }
+
     const guildData = GuildManager.getGuild( interaction.guild );
     guildData.rankRoles = [];
 
