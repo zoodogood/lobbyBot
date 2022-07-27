@@ -4,11 +4,19 @@ import GuildManager from '@managers/GuildManager';
 
 
 class User {
-  constructor(id, {messages = 0, eloCoins = 50, mmr = 100, matchWons = 0, matchLoses = 0, matchCount = 0}){
+  constructor(id, {
+    messages = 0, eloCoins = 50, mmr = 100, matchWons = 0, matchLoses = 0, matchCount = 0,
+    nickname = null, tagId = null
+
+  }){
     this.id = id;
+
     this.eloCoins = eloCoins;
-    this.mmr = mmr;
+    this.mmr      = mmr;
     this.messages = messages;
+
+    this.nickname = nickname;
+    this.tagId    = tagId;
 
     this.matchCount = matchCount;
     this.matchWons  = matchWons;
