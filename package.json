@@ -21,6 +21,7 @@
     "@global/util": "file:modules/Util",
     "@managers/GuildManager": "file:modules/managers/GuildManager",
     "@managers/lobby": "file:modules/managers/LobbyManager",
+    "@managers/ModesManager": "file:modules/managers/ModesManager",
     "@managers/UserManager": "file:modules/managers/UsersManager",
     "@supabase/supabase-js": "^1.35.3",
     "discord-api-types": "^0.31.0",
