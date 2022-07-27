@@ -70,7 +70,6 @@ class Command extends BaseCommand {
       type: 1,
       description: "Команда для передачи ELO валюты",
       dm_perrmissions: true,
-      default_member_permissions: 8,
       options: [
         {
           "type": 6,
