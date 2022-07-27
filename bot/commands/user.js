@@ -1,30 +1,16 @@
 import BaseCommand from '../modules/commands/BaseCommand.js';
 
 import UserManager from '@managers/UserManager';
-import GuildManager from '@managers/GuildManager';
 
 import DiscordUtil from '@bot/discord-util';
 const {MessageConstructor} = DiscordUtil;
+
 
 class Command extends BaseCommand {
   constructor() {
     super();
   }
 
-  getRank({user, guild}){
-    const { rankRoles } = GuildManager.getGuild(guild);
-    const { mmr: userMmr } = UserManager.getUser(user);
-
-    if (rankRoles === null)
-      return null;
-
-    const heighstRole = rankRoles
-      .map(data => data.split(":"))
-      .filter(([roleId, mmr]) => userMmr >= mmr)
-      .reduce((acc, [roleId, mmr]) => mmr > acc.mmr ? ({roleId, mmr}) : acc, {mmr: 0});
-
-    return heighstRole;
-  }
 
   run(interaction){
     const userId = interaction.options.get("user")?.value ?? interaction.user.id;
@@ -32,7 +18,7 @@ class Command extends BaseCommand {
 
     const userUser = interaction.client.users.cache.get(userId);
 
-    const highestRankRoleId = this.getRank(interaction)?.roleId;
+    const highestRankRoleId = userData.getRank(interaction)?.roleId;
 
     const rankTitle = highestRankRoleId ?
       `<@&${ highestRankRoleId }>` :
@@ -79,7 +65,6 @@ class Command extends BaseCommand {
       type: 1,
       description: "Отображает информацию о пользователе",
       dm_perrmissions: true,
-      default_member_permissions: 8,
       options: [{
         type: 6,
         name: "user",
