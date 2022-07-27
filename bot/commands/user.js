@@ -5,6 +5,7 @@ import UserManager from '@managers/UserManager';
 import DiscordUtil from '@bot/discord-util';
 const {MessageConstructor} = DiscordUtil;
 
+import Util from '@global/util';
 
 class Command extends BaseCommand {
   constructor() {
@@ -26,13 +27,17 @@ class Command extends BaseCommand {
 
     const fields = this.getFields(userData);
 
+    const rankContent     = `🔥 **Ранг:** ${ rankTitle } (рейтинг ${ userData.mmr })`;
+    const eloContent      = `🧪 **ELO:** ${ Util.ending(userData.eloCoins, "поинт", "ов", "", "а") }`;
+    const messagesContent = `📨 Сообщений: ${ userData.messages }`;
+
 
     const message = new MessageConstructor({
       author: {
         name:    userUser.username,
         iconURL: userUser.avatarURL()
       },
-      description: `**Ранг:** ${ rankTitle } (рейтинг ${ userData.mmr })\n**ELO поинты:** ${ userData.eloCoins }\n\nСообщений: ${ userData.messages }`,
+      description: `${ rankContent }\n${ eloContent }\n\n${ messagesContent }`,
       footer: {text: "Аккаунт создан:"},
       fields,
       timestamp: userUser.createdAt
@@ -41,19 +46,41 @@ class Command extends BaseCommand {
   }
 
   getFields(userData){
-    const fields = [];
 
-    const {nickname, tagId} = userData;
-    if (nickname || tagId){
-      const name = "Идентификаторы игрока:";
-      const value = [
-        nickname ? `Никнейм: ${ nickname }` : "",
-        tagId    ? `Тэг: ${ tagId }`        : ""
+    const FIELDS_DATA = [
+      {
+        id: "Identifier",
+        condition: ({nickname, tagId}) => nickname || tagId,
+        getField: ({nickname, tagId}) => {
+          const name = "**Идентификаторы игрока:**";
+          const value = [
+            nickname ? `Никнейм: ${ nickname }` : "",
+            tagId    ? `Тэг: ${ tagId }`        : ""
 
-      ].join("\n");
+          ].join("\n");
 
-      fields.push({name, value});
-    }
+          return {name, value};
+        }
+      },
+
+      {
+        id: "Winrate",
+        condition: () => true,
+        getField: ({matchCount, matchWons, matchLoses}) => {
+          const percentage = Math.floor((matchWons / matchCount) * 100);
+
+          const name = `**Винрейт: ${ percentage ? `${ percentage }%` : "N/A" }**`;
+          const value = `Игр: ${ matchCount }\nПобед: ${ matchWons }\nПоражений: ${ matchLoses }`;
+
+          return {name, value};
+        }
+      },
+    ]
+
+    const fields = FIELDS_DATA
+      .filter(data => data.condition(userData))
+      .map(data => data.getField(userData));
+
 
     return fields;
   }
