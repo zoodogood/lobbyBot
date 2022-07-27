@@ -1,5 +1,5 @@
 
-
+import GuildManager from '@managers/GuildManager';
 
 
 
@@ -13,6 +13,21 @@ class User {
     this.matchCount = matchCount;
     this.matchWons  = matchWons;
     this.matchLoses = matchLoses;
+  }
+
+  getRank({guild}){
+    const { rankRoles } = GuildManager.getGuild(guild);
+    const { mmr: userMmr } = this;
+
+    if (rankRoles === null)
+      return null;
+
+    const heighstRole = rankRoles
+      .map(data => data.split(":"))
+      .filter(([roleId, mmr]) => userMmr >= mmr)
+      .reduce((acc, [roleId, mmr]) => mmr > acc.mmr ? ({roleId, mmr}) : acc, {mmr: 0});
+
+    return heighstRole;
   }
 }
 
