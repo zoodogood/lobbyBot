@@ -218,9 +218,8 @@ class Command extends BaseCommand {
     name: "lobby",
     slash: {
       type: 1,
-      description: "Отображает лобби",
+      description: "Позволяет взаимодействовать с лобби",
       dm_perrmissions: true,
-      default_member_permissions: 8,
       options: [
         {
           "type": 3,
