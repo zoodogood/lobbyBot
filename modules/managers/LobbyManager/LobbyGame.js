@@ -1,26 +1,5 @@
-import FileSystem from 'fs';
-import { Collection } from '@discordjs/collection';
 
-async function initModes(){
-  const __dirname = `${ process.cwd() }`;
-  const path = `${ __dirname }/modules/managers/LobbyManager/gameModes`;
-
-  const files = FileSystem.readdirSync(path)
-    .filter(name => /^[a-z].+?\.js/.test(name));
-
-  const modes = new Collection();
-
-
-  for (const fileName of files){
-    const { Mode } = await import(`file://${ path }/${ fileName }`);
-    const name = Mode.button.value;
-
-    modes.set(name, Mode);
-  }
-  return modes;
-}
-
-const modesList = await initModes();
+import Modes from '@managers/ModesManager';
 
 
 class LobbyGame {
@@ -42,10 +21,8 @@ class LobbyGame {
   }
 
   get modeInfo(){
-    return this.constructor.modesList.get(this.mode);
+    return Modes.list.get(this.mode);
   }
-
-  static modesList = modesList;
 }
 
 export default LobbyGame;
