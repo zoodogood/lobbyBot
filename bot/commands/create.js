@@ -66,6 +66,7 @@ class Command extends BaseCommand {
     name: "create",
     slash: {
       description: "Создать лобби",
+      default_member_permissions: 8,
       options: [
         {
           type: 3,
