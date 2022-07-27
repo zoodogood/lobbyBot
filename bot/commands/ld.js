@@ -80,9 +80,10 @@ class Command extends BaseCommand {
 
 
   getLeadersFields({interaction, sortBy}){
-    const membersCache = interaction.guild.members.cache;
+    const membersCache = interaction.guild.members.cache
+      .filter(member => !member.user.bot);
 
-    const getUserData = UserManager.getUser.bind( UserManager );
+    const getUserData = UserManager.getUser.bind(UserManager);
 
     const usersData = membersCache.map(getUserData);
 
@@ -121,8 +122,7 @@ class Command extends BaseCommand {
     slash: {
       type: 1,
       description: "Выводит топ по выбранной категории",
-      dm_perrmissions: true,
-      default_member_permissions: 8
+      dm_perrmissions: true
     }
   };
 
