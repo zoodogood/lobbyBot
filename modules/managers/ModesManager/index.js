@@ -1,7 +1,7 @@
 import FileSystem from 'fs';
 import { Collection } from '@discordjs/collection';
 
-class Modes {
+class ModesManager {
   static async initModes(){
     const __dirname = `${ process.cwd() }`;
     const path = `${ __dirname }/modules/managers/ModesManager/gameModes`;
@@ -24,4 +24,4 @@ class Modes {
 }
 
 
-export default Modes;
+export default ModesManager;

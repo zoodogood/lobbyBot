@@ -1,5 +1,5 @@
 
-import Modes from '@managers/ModesManager';
+import ModesManager from '@managers/ModesManager';
 
 
 class LobbyGame {
@@ -21,7 +21,7 @@ class LobbyGame {
   }
 
   get modeInfo(){
-    return Modes.list.get(this.mode);
+    return ModesManager.list.get(this.mode);
   }
 }
 
