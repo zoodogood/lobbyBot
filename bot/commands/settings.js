@@ -107,8 +107,8 @@ class Command extends BaseCommand {
     guildData.rankStatsChannelId = channelId;
     await GuildManager.update( guildData );
 
-    const message = new MessageConstructor({ content: `Успешно обновлено ✅`, ephemeral: true });
-    interaction.reply(message);
+    const message = this.createMessage({interaction});
+    interaction.update(message);
   }
 
   static data = {
