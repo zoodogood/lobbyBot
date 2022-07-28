@@ -1,5 +1,7 @@
 import BaseCommand from '../modules/commands/BaseCommand.js';
+
 import LobbyManager from '@managers/lobby';
+import UserManager from '@managers/UserManager';
 
 import { Modal } from "discord.js";
 
@@ -32,6 +34,13 @@ class Command extends BaseCommand {
   enterPlayer([id, ...rest], interaction){
     const i18n = this.i18n.bind(this, interaction.locale);
     const lobby = LobbyManager.lobbies.get(id);
+
+    const userData = UserManager.getUser(interaction.user);
+
+    if (!userData.tagId){
+      interaction.reply({ ephemeral: true, content: "Вы должны быть зарегистрированны, чтобы присоединятся к лобби (/register)"});
+      return;
+    }
 
     if (!lobby)
       throw new Error("LOBBY_NOT_FOUND");
