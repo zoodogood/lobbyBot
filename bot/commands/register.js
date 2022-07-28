@@ -20,6 +20,7 @@ class Command extends BaseCommand {
 
     const messages = [];
 
+
     if (nickname){
       userData.nickname = nickname;
       messages.push("Успешно установили Никнейм");
@@ -28,6 +29,7 @@ class Command extends BaseCommand {
     if (tagId){
       userData.tagId = tagId;
       messages.push("Успешно установили Айди");
+
     }
 
     if (!messages.length){
@@ -50,12 +52,14 @@ class Command extends BaseCommand {
         {
           type: 3,
           name: "nickname",
-          description: "Игровое имя"
+          description: "Игровое имя",
+          max_length: 50
         },
         {
           type: 3,
           name: "tag_id",
-          description: "Идентификатор"
+          description: "Идентификатор",
+          max_length: 50
         }
       ]
     }
