@@ -224,7 +224,8 @@ class Command extends BaseCommand {
     await new MethodExecuter().execute(`event.lobbyEvents.onGameStart.${ lobby.name }`, {mode, interaction});
 
     const message = this.takeButtons(id, interaction);
-    interaction.update(message);
+    await interaction.webhook.editMessage(interaction.message.id, message)
+      .catch(() => {});
   }
 
   static data = {
