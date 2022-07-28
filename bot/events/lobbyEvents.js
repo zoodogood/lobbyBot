@@ -19,7 +19,11 @@ class Event {
     const game = lobby.game;
     const modeRules = game.modeInfo;
 
-    await modeRules.onEnd({game, interaction, lobby});
+    const isEnd = await modeRules.onEnd({game, interaction, lobby});
+    if (isEnd){
+      modeRules.syncRanksWithRoles({game: lobby.game, guild: interaction.guild});
+      lobby.game = null;
+    }
   }
 
   onEnter([id, ...rest]){
