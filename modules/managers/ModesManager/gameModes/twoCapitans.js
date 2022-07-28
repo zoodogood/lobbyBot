@@ -3,6 +3,7 @@ const {MessageConstructor} = DiscordUtil;
 
 import UserManager from '@managers/UserManager';
 import GuildManager from '@managers/GuildManager';
+import LobbyManager from '@managers/lobby';
 
 const EmojiColors = ["🟣", "🔵"];
 
@@ -22,7 +23,7 @@ class Mode {
       return;
 
     lobby.game.start();
-    // LobbyManager.update(lobby);
+    LobbyManager.update(lobby);
   }
 
   static async onEnd({lobby, interaction}){
@@ -36,8 +37,50 @@ class Mode {
 
 
     summarize.sendResults({interaction, winners, lobby});
-    summarize.sendAudits({interaction, table, lobby});
-    lobby.game = null;
+    lobby.game.showResultsTable({interaction, table, lobby});
+    return true;
+  }
+
+  static syncRanksWithRoles({game, guild}){
+
+    const client = globalThis.app.client;
+    guild = client.guilds.resolve(guild);
+
+    const guildData = GuildManager.getGuild(guild);
+
+    if (guildData.ranksRoles === null)
+      return;
+
+    const usersData = game.teams
+      .reduce(
+        (acc, team) => acc.concat([...team.members, team.leader]),
+        []
+      )
+      .map(user => UserManager.getUser(user));
+
+
+    const membersCache = guild.members.cache;
+
+
+
+    const ranksIdList = guildData.rankRoles
+      .map(raw => raw.split(":")[0]);
+
+    const ranksEditReason = "ranks system";
+
+    usersData.forEach(userData => {
+      const member = membersCache.get( userData.id );
+      const highestRank = userData.getRank({guild})?.roleId;
+
+      if (!highestRank)
+        return;
+
+      const roles = member.roles;
+      const toPut = roles.cache.filter(role => ranksIdList.includes(role.id) && role.id !== highestRank);
+      roles.remove(toPut, ranksEditReason);
+
+      roles.add(highestRank, ranksEditReason);
+    });
   }
 
 }
@@ -85,7 +128,7 @@ class AssembleTeam {
 
     const sendMessage = async (messageContent) => {
       if (!sendMessage.target){
-        const responce = await this.interaction.channel.send(messageContent);
+        const responce = await this.interaction.reply(messageContent);
         sendMessage.target = responce;
         return responce;
       }
@@ -215,6 +258,7 @@ class AssembleTeam {
     const message = new MessageConstructor({
       title: TYPES_CONTENT[type].content,
       description: TYPES_CONTENT[type].getDescription(),
+      fetchReply: true,
       fields,
       components: {
         placeholder: "Выбрать",
@@ -312,37 +356,6 @@ class Summarize {
     interaction.channel.send(message);
   }
 
-  sendAudits({interaction, table}){
-    const guildData = GuildManager.getGuild(interaction.guild);
-
-    const channelId = guildData.rankStatsChannelId;
-
-    if (!channelId){
-      return;
-    }
-
-    const channelsCache = interaction.client.channels.cache;
-    const channel = channelsCache.get(channelId);
-
-    const description = Object.entries(table)
-      .map(([userId, {past, fresh, pastRank, freshRank}]) => {
-        let rankChunk = "";
-        if (pastRank !== freshRank){
-          const toString = (rank) => rank ? `<@&${ rank }>` : "N/A";
-          rankChunk = `**Ранг:** ${ toString(pastRank) } => ${ toString(freshRank) }`;
-        }
-
-        const mmr = `**Очки:** ${ past } ${ fresh > past ? "+" : "-" } ${ Math.abs(fresh - past) } = ${ fresh }`;
-
-        return `<@${ userId }> ${ mmr } ${ rankChunk }`;
-      })
-      .join("\n");
-
-    const message = new MessageConstructor({
-      description
-    });
-    channel.send(message);
-  }
 
   assignRanks({interaction, winners}){
     const lobby = this.lobby;
