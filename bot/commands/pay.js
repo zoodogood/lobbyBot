@@ -17,6 +17,11 @@ class Command extends BaseCommand {
 
     const authorData = UserManager.getUser( interaction.user );
 
+    if (authorData.eloCoins < 0){
+      this.sendNegativeEloOut(interaction);
+      return;
+    }
+
     if (authorData.eloCoins < eloCount){
       this.sendLackEloOut(interaction, {eloCount, authorData});
       return;
@@ -30,6 +35,8 @@ class Command extends BaseCommand {
       this.sendBadUserOut(interaction);
       return;
     }
+
+
 
 
     authorData.eloCoins -= eloCount;
@@ -48,6 +55,12 @@ class Command extends BaseCommand {
     });
 
     interaction.reply(message);
+  }
+
+  sendNegativeEloOut(interaction){
+    const message = new MessageConstructor({ content: `Невозможно передать отрицательное количество`, ephemeral: true });
+    interaction.reply(message);
+    return;
   }
 
   sendLackEloOut(interaction, {eloCount, authorData}){
