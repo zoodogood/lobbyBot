@@ -26,6 +26,10 @@ class Command extends BaseCommand {
       return;
     }
 
+    this.displayLobby([], {lobby, i18n, interaction});
+  }
+
+  async displayLobby([...rest], {lobby, i18n, interaction}){
     await new LobbyInfo(lobby, i18n)
       .displayInteraction(interaction);
   }
