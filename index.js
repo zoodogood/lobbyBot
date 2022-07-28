@@ -14,7 +14,7 @@ process.on('unhandledRejection', (reason, promise) => {
 class App {
 
   async load(){
-    const modules = ["initDatabase", "initLocales", "initClient"];
+    const modules = ["initDatabase", "initLocales", "initModes", "initClient"];
     for (const initName of modules){
       console.time(initName);
       await this[initName]();
@@ -43,6 +43,12 @@ class App {
 
   async initLocales(){
     globalThis.i18n = new LocalesStructure();
+  }
+
+  async initModes(){
+    const { default: ModesManager } = await import('@managers/ModesManager');
+    await ModesManager.initModes();
+
   }
 }
 
