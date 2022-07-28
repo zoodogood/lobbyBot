@@ -63,6 +63,9 @@ class MessageConstructor {
 class ComponentsSimplify {
   simplify(data){
 
+    if (data instanceof Array && data.length === 0)
+      return [];
+
     const isComponent  = (component) => "type" in component;
     const isActionRow  = (component) => component instanceof Array && isComponent(component.at(0)) || component instanceof MessageActionRow;
     const isComponents = (component) => component.length && isActionRow(component.at(0));
