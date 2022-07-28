@@ -31,7 +31,7 @@ class Command extends BaseCommand {
       rankRoles = [];
 
     const author = { name: "Настройки Бота", iconURL: interaction.guild.iconURL() };
-    const description = ``;
+    const description = `На данный момент вы можете:\n· Настроить ранги на сервере\n· Установить канал для результатов матчей. В этот канал после окончания матча будут отправляться игроки, время матча и рейтинг`;
 
     const message = new MessageConstructor({
       author,
