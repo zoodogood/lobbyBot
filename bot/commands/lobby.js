@@ -29,7 +29,9 @@ class Command extends BaseCommand {
     this.displayLobby([], {lobby, i18n, interaction});
   }
 
-  async displayLobby([...rest], {lobby, i18n, interaction}){
+  async displayLobby([...rest], {lobby, interaction}){
+    const i18n = this.i18n.bind(this, interaction.locale);
+
     await new LobbyInfo(lobby, i18n)
       .displayInteraction(interaction);
   }
@@ -369,8 +371,9 @@ class LobbyInfo {
       description: `Это лобби было удалено.\nДата удаления: ${ time }`,
       color: Command.EMBED_COLOR,
       fetchReply: true,
-      timestamp: lobby.createdTimestamp
+      timestamp: lobby.createdTimestamp,
 
+      components: []
     });
   }
 }

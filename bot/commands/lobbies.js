@@ -107,11 +107,8 @@ class Command extends BaseCommand {
     const name = interaction.values.at(0);
     const lobby = LobbyManager.lobbies.get(name);
 
-    const i18n = this.i18n.bind(this, interaction.locale);
 
-    console.log(lobby);
-
-    new MethodExecuter().execute("command.lobby.displayLobby", {interaction, i18n, lobby});
+    new MethodExecuter().execute("command.lobby.displayLobby", {interaction, lobby});
   }
 
   parseInformation(message){
