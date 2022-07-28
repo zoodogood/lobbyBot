@@ -31,7 +31,7 @@ class Command extends BaseCommand {
       rankRoles = [];
 
     const author = { name: "Настройки Бота", iconURL: interaction.guild.iconURL() };
-    const description = `На данный момент вы можете:\n· Настроить ранги на сервере\n· Установить канал для результатов матчей. В этот канал после окончания матча будут отправляться игроки, время матча и рейтинг`;
+    const description = `В этом меню вы можете:\n· Настроить ранги на сервере.\n· Установить канал для результатов матчей. В этот канал после окончания матча будут отправляться игроки, время матча и рейтинг.`;
 
     const message = new MessageConstructor({
       author,
@@ -39,12 +39,12 @@ class Command extends BaseCommand {
       color: "#7e1503",
       fields: [
         { name: "Ранги:", value: `(${ Util.ending(rankRoles.length, "рол", "ей", "ь", "и") })`, inline: true },
-        { name: "Канал для отправки\nрезультатов матчей:", value: `<#${ rankStatsChannelId }>`, inline: true }
+        { name: "Канал для результатов:", value: `<#${ rankStatsChannelId }>`, inline: true }
 
       ],
       components: [
-        { style: 2, type: 2, customId: `command.settings.rankRoles.run`, label: "Просмотреть ранговые роли" },
-        { style: 2, type: 2, customId: `command.settings.modalSetRankStatsChannel`, label: "Установить канал для рангов" }
+        { style: 2, type: 2, customId: `command.settings.rankRoles.run`, label: "Просмотреть ранговые роли", emoji: "🏆" },
+        { style: 2, type: 2, customId: `command.settings.modalSetRankStatsChannel`, label: "Установить канал для рангов", emoji: "🗃️" }
 
       ]
     });
