@@ -25,26 +25,29 @@ class Command extends BaseCommand {
   }
 
   createMessage({interaction}){
-    let { rankRoles, rankStatsChannelId } = GuildManager.getGuild( interaction.guild );
+    const guildData = GuildManager.getGuild( interaction.guild );
 
-    if (!rankRoles)
-      rankRoles = [];
+    const rankRoles = guildData.rankRoles ?? [];
+    const rankStatsChannelId = guildData.rankStatsChannelId;
+    const loggingChannelId   = guildData.loggingChannelId;
 
     const author = { name: "Настройки Бота", iconURL: interaction.guild.iconURL() };
-    const description = `В этом меню вы можете:\n· Настроить ранги на сервере.\n· Установить канал для результатов матчей. В этот канал после окончания матча будут отправляться игроки, время матча и рейтинг.`;
+    const description = `В этом меню вы можете:\n· Настроить ранги на сервере.\n· Установить канал для результатов матчей. В этот канал после окончания матча будут отправляться игроки, время матча и рейтинг.\n· Журнал действий (канал с логами) просто необходим для обеспечения безопасности сервера. Там будут выводиться действия модераторов связанные с этим ботом.`;
 
     const message = new MessageConstructor({
       author,
       description,
       color: "#7e1503",
       fields: [
-        { name: "Ранги:", value: `(${ Util.ending(rankRoles.length, "рол", "ей", "ь", "и") })`, inline: true },
-        { name: "Канал для результатов:", value: `<#${ rankStatsChannelId }>`, inline: true }
+        { name: "Ранги:", value: `(${ Util.ending(rankRoles.length, "рол", "ей", "ь", "и") })` },
+        { name: "Канал для результатов:", value: rankStatsChannelId ? `<#${ rankStatsChannelId }>` : "Отсуствует.", inline: true },
+        { name: "Канал с логами", value: loggingChannelId ? `<#${ loggingChannelId }>` : "Отсуствует.", inline: true }
 
       ],
       components: [
         { style: 2, type: 2, customId: `command.settings.rankRoles.run`, label: "Просмотреть ранговые роли", emoji: "🏆" },
-        { style: 2, type: 2, customId: `command.settings.modalSetRankStatsChannel`, label: "Установить канал для рангов", emoji: "🗃️" }
+        { style: 2, type: 2, customId: `command.settings.modalSetRankStatsChannel`, label: "Установить канал для рангов", emoji: "🗃️" },
+        { style: 2, type: 2, customId: `command.settings.modalSetLoggingChannel`, label: "Установить канал для логирования", emoji: "🗃️" }
 
       ]
     });
@@ -81,8 +84,6 @@ class Command extends BaseCommand {
     interaction.showModal(modal);
   }
 
-
-
   async setRankStatsChannel([...rest], interaction){
     const value = interaction.fields.getField("command.settings.input.setRankStatsChannel").value;
     const channelId = value.match(/\d{17,19}/)?.[0];
@@ -110,6 +111,58 @@ class Command extends BaseCommand {
     const message = this.createMessage({interaction});
     interaction.update(message);
   }
+
+
+
+  modalSetLoggingChannel([...rest], interaction){
+
+    const hasPermissions = interaction.member.permissions.has("MANAGE_GUILD");
+    if (!hasPermissions){
+      interaction.reply({ content: `Требуется право Управления сервером`, ephemeral: true });
+      return;
+    }
+
+    const components = new ComponentsSimplify().simplify({
+      style: 1,
+      type: "TEXT_INPUT",
+      placeholder: "<#994913375626743838>",
+      customId: `command.settings.input.setLoggingChannel`,
+      label: "Канал"
+    });
+
+
+    const modal = new Modal({ customId: "command.settings.setLoggingChannel", title: "Установите канал", components });
+    interaction.showModal(modal);
+  }
+
+  async setLoggingChannel([...rest], interaction){
+    const value = interaction.fields.getField("command.settings.input.setLoggingChannel").value;
+    const channelId = value.match(/\d{17,19}/)?.[0];
+
+    if (!channelId){
+      const message = new MessageConstructor({ content: "Не удалось определить айди канала в переданном тексте", ephemeral: true });
+      interaction.reply(message);
+      return;
+    }
+
+    const isChannelExists = interaction.client.channels.cache.has(channelId);
+
+    if (!isChannelExists){
+      const message = new MessageConstructor({ content: `Не удалось получить объект канала с ID ${ channelId }`, ephemeral: true });
+      interaction.reply(message);
+      return;
+    }
+
+    const guild = interaction.guild;
+    const guildData = GuildManager.getGuild(guild);
+
+    guildData.loggingChannelId = channelId;
+    await GuildManager.update( guildData );
+
+    const message = this.createMessage({interaction});
+    interaction.update(message);
+  }
+
 
   static data = {
     name: "settings",
