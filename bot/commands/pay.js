@@ -78,6 +78,7 @@ class Command extends BaseCommand {
 
   static data = {
     name: "pay",
+    removed: true,
     // Discord SlashCommands
     slash: {
       type: 1,
