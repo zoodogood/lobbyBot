@@ -6,7 +6,7 @@ class CommandsLoader {
   async update(){
     const __dirname = `${ process.cwd() }`;
     globalThis.commands = new Collection();
-    
+
     const files = fileSystem.readdirSync(`${ __dirname }/bot/commands/`)
       .filter(name => /^[a-z].+?\.js/.test(name));
 
@@ -14,6 +14,9 @@ class CommandsLoader {
       const { Command } = await import(`file://${ __dirname }/bot/commands/${ name }`);
       const command = new Command();
 
+      if (command.constructor.data.removed === true)
+        continue;
+        
       globalThis.commands.set(command.name, command);
     }
 
