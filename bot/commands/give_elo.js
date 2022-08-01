@@ -3,6 +3,8 @@ import BaseCommand from '../modules/commands/BaseCommand.js';
 import DiscordUtil from '@bot/discord-util';
 const { MessageConstructor } = DiscordUtil;
 
+import Util from '@global/util';
+
 import UserManager from '@managers/UserManager';
 
 class Command extends BaseCommand {
@@ -12,38 +14,69 @@ class Command extends BaseCommand {
 
   async run(interaction){
 
-    const [targetId, eloCount] = interaction.options.data
+    const [targetRaw, eloCount] = interaction.options.data
       .map(option => option.value);
 
-    const authorData = UserManager.getUser( interaction.user );
+    const authorData  = UserManager.getUser( interaction.user );
+    const getUserData = UserManager.getUser.bind(UserManager);
 
 
-    const targetData = UserManager.getUser( targetId );
-    const targetUser = interaction.client.users.cache.get( targetId );
+    const usersId = this.resolveUsersId(targetRaw, interaction.guild);
 
-
-    if (targetUser.bot){
-      this.sendBadUserOut(interaction);
+    if (usersId.length === 0){
+      sendBadCountOut();
       return;
     }
 
-    targetData.eloCoins += eloCount;
-    UserManager.update( targetData );
+    usersId
+      .map(getUserData)
+      .forEach(data => {
+        data.eloCoins += eloCount;
+        UserManager.update( data );
+      });
+
+    const targetDescription = this.getTargetsDescription(usersId);
 
 
     const message = new MessageConstructor({
       title: "Выдача поинтов",
-      description: `${ interaction.user } выдал ${ eloCount } ELO для ${ targetUser }`,
+      description: `${ interaction.user } выдал ${ eloCount } ELO для ${ targetDescription }`,
       color: "#4f47bf",
-      author: { name: targetUser.username, iconURL: targetUser.avatarURL() }
+      author: { name: interaction.user.username, iconURL: interaction.user.avatarURL() }
     });
 
     interaction.reply(message);
   }
 
+  getTargetsDescription(usersId){
+    const count = Util.ending( usersId.length, "пользовател", "ей", "я", "ей" );
+
+    const list = usersId.map(id => `<@${ id }>`)
+      .join(", ");
+
+    return `${ count }: ${ list }`;
+  }
+
+  resolveUsersId(raw, guild){
+    const usersId = raw.match(/(?<=<@!?)\d{17,20}(?=\>)/g) ?? [];
+    const rolesId = raw.match(/(?<=<@&)\d{17,20}(?=\>)/g)  ?? [];
+
+
+    const rolesCache = guild.roles.cache;
+
+    const toMembers = (roleId) => rolesCache.get(rolesId).members
+      .map(member => member.id);
+
+    rolesId
+      .map(toMembers)
+      .forEach(membersId => usersId.push(...membersId));
+
+    return usersId;
+  }
+
 
   sendBadUserOut(interaction){
-    const message = new MessageConstructor({ content: `Невозможно применить команду на этого участника`, ephemeral: true });
+    const message = new MessageConstructor({ content: `Не получено ни одного участника. Отмена`, ephemeral: true });
     interaction.reply(message);
     return;
   }
@@ -58,10 +91,11 @@ class Command extends BaseCommand {
       default_member_permissions: 8,
       options: [
         {
-          "type": 6,
-          "name": "user",
+          "type": 3,
+          "name": "users",
           "description": "Пользователь, кому её выдать",
-          "required": true
+          "required": true,
+          "min_length": 17
         },
         {
           "type": 4,
