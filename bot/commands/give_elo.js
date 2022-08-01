@@ -37,10 +37,14 @@ class Command extends BaseCommand {
 
     const targetDescription = this.getTargetsDescription(usersId);
 
+    const actionDescription = eloCount > 0 ?
+      `выдал ${ eloCount } ELO для` :
+      `снял ${ -eloCount } ELO у`;
+
 
     const message = new MessageConstructor({
-      title: "Выдача поинтов",
-      description: `${ interaction.user } выдал ${ eloCount } ELO для ${ targetDescription }`,
+      title: "Изменение количества поинтов",
+      description: `${ interaction.user } ${ actionDescription } ${ targetDescription }`,
       color: "#4f47bf",
       author: { name: interaction.user.username, iconURL: interaction.user.avatarURL() }
     });
