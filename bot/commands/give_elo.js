@@ -68,12 +68,15 @@ class Command extends BaseCommand {
 
     const rolesCache = guild.roles.cache;
 
-    const toMembers = (roleId) => rolesCache.get(rolesId).members
+    const toMembers = (roleId) => rolesCache.get(roleId).members
       .map(member => member.id);
 
-    rolesId
-      .map(toMembers)
-      .forEach(membersId => usersId.push(...membersId));
+
+    usersId.push(
+      ...rolesId
+        .map(toMembers)
+        .reduce((acc, members) => acc.concat(members), [])
+    );
 
     return usersId;
   }
