@@ -98,6 +98,15 @@ class Command extends BaseCommand {
   takeButtons(lobbyId, interaction){
     const lobby = LobbyManager.lobbies.get(lobbyId);
 
+    // Временный костыль связанный с тем, что модальные окна находятся в разработке и не поддерживают все устройства
+    const startGameOptions = [
+      {
+        label: "Два капитана",
+        value: "twoCapitans",
+        description: "Случайным образом выбираются двое. Собирают команду"
+      }
+    ];
+
     const BUTTONS = [
       {
         description: "Начинает игру. Только когда лобби заполнено!",
@@ -105,7 +114,7 @@ class Command extends BaseCommand {
           && lobby.authorId === user.id
           && lobby.players.length === lobby.players.cells,
 
-        button: { style: 3, type: 2, customId: `command.lobby.modalSelectMode.${ lobby.name }`, label: `Начать!` }
+        button: { style: 3, type: 3, customId: `command.lobby._startGameWithMode.${ lobby.name }`, label: "Начать игру!", placeholder: `Начать игру!`, options: startGameOptions}
       },
       {
         description: "Заканчивает игру. Если команд несколько, позволяет указать победившую.",
@@ -140,9 +149,17 @@ class Command extends BaseCommand {
       .filter(buttonData => buttonData.condition(interaction))
       .map(buttonData => buttonData.button);
 
-    const components = buttons.length <= 5 ?
-      buttons :
-      [ buttons.slice(0, 5), buttons.slice(5) ];
+    const components = [];
+
+    while (buttons.length){
+      const [button] = buttons.splice(0, 1);
+
+      const lastRow = components.at(-1);
+      if (!lastRow || lastRow.length > 5 || lastRow.at(-1).type === 3)
+        components.push([]);
+
+      components.at(-1).push(button);
+    }
 
 
     const description = BUTTONS.map(buttonData => `• ${ buttonData.button.label }${ buttonData.button.emoji ? ` ${ buttonData.button.emoji }` : "" } — ${ buttonData.description }`).join("\n\n");
@@ -222,6 +239,19 @@ class Command extends BaseCommand {
     const lobby = LobbyManager.lobbies.get(id);
 
     const [mode] = interaction.fields.getField("command.lobby.selectMode.input").value;
+
+    await new MethodExecuter().execute(`event.lobbyEvents.onGameStart.${ lobby.name }`, {mode, interaction});
+
+    const message = this.takeButtons(id, interaction);
+    await interaction.webhook.editMessage(interaction.message.id, message)
+      .catch(() => {});
+  }
+
+  // Временный костыль связанный с тем, что модальные окна находятся в разработке и не поддерживают все устройства
+  async _startGameWithMode([id, ...rest], interaction){
+    const lobby = LobbyManager.lobbies.get(id);
+
+    const mode = interaction.values.at(0);
 
     await new MethodExecuter().execute(`event.lobbyEvents.onGameStart.${ lobby.name }`, {mode, interaction});
 
